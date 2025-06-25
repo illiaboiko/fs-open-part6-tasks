@@ -4,9 +4,16 @@ import { voteActionCreator } from '../reducers/anecdoteReducer'
 const AnecdoteList = () => {
   const dispatch = useDispatch()
 
-  const anecdotes = useSelector((state) =>
-    state.slice().sort((a, b) => b.votes - a.votes)
-  )
+  const anecdotes = useSelector((state) => {
+    if (state.filter === 'ALL') {
+      return state.anecdotes.slice().sort((a, b) => b.votes - a.votes)
+    } else {
+      return state.anecdotes
+        .slice()
+        .sort((a, b) => b.votes - a.votes)
+        .filter((a) => a.content.toLowerCase().includes(state.filter))
+    }
+  })
 
   const vote = (id) => {
     dispatch(voteActionCreator(id))
