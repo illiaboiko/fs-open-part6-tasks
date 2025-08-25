@@ -5,7 +5,7 @@ const AnecdoteList = () => {
   const dispatch = useDispatch()
 
   const anecdotes = useSelector((state) => {
-    if (state.filter === 'ALL') {
+    if (state.filter === '') {
       return state.anecdotes.slice().sort((a, b) => b.votes - a.votes)
     } else {
       return state.anecdotes
