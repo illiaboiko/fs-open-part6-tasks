@@ -10,7 +10,7 @@ const store = configureStore({
   reducer: {
     anecdotes: anecdoteReducer,
     filter: filterReducer,
-    notifications: notificationReducer,
+    notification: notificationReducer,
   },
 })
 console.log(store.getState())
