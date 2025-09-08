@@ -4,12 +4,51 @@ import AnecdoteForm from './components/AnecdoteForm'
 import Notification from './components/Notification'
 import { addAnecdote, getAnecdotes, voteAnecdote } from './requests'
 
+import { useReducer } from 'react'
+import NotificationContext from './NotificationContext'
+
+const notificationReducer = (state, action) => {
+  switch (action.type) {
+    case 'CREATED':
+      return `You created ${action.payload}`
+    case 'VOTED':
+      return `You voted for ${action.payload}`
+    case 'ERROR':
+      return `${action.payload}`
+    case 'REMOVE':
+      return ''
+    default:
+      return ''
+  }
+}
+
 const App = () => {
+  // implementing useReducer for notification
+  const [notification, notificationDispatch] = useReducer(
+    notificationReducer,
+    ''
+  )
+
+  const notify = ({ type, payload }) => {
+    notificationDispatch({ type, payload })
+    setTimeout(() => {
+      notificationDispatch({ type: 'REMOVE' })
+    }, 5000)
+  }
+
   const queryClient = useQueryClient()
   const newAnecdoteMutation = useMutation({
     mutationFn: addAnecdote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['anecdotes'] })
+    onSuccess: (newAnecdote, content) => {
+      const anecdotes = queryClient.getQueryData(['anecdotes'])
+      queryClient.setQueryData(['anecdotes'], anecdotes.concat(newAnecdote))
+      notify({ type: 'CREATED', payload: content })
+    },
+    onError: (error) => {
+      if (error.response.status === 400) {
+        console.log(error)
+        notify({ type: 'ERROR', payload: error.response.data.error })
+      }
     },
   })
 
@@ -23,7 +62,7 @@ const App = () => {
   const handleVote = (anecdote) => {
     const updatedAnecdote = { ...anecdote, votes: anecdote.votes + 1 }
     voteAnecdoteMutation.mutate(updatedAnecdote)
-
+    notify({ type: 'VOTED', payload: anecdote.content })
     console.log('vote')
   }
 
@@ -49,22 +88,24 @@ const App = () => {
   const anecdotes = result.data
 
   return (
-    <div>
-      <h3>Anecdote app</h3>
+    <NotificationContext.Provider value={[notification, notify]}>
+      <div>
+        <h3>Anecdote app</h3>
 
-      <Notification />
-      <AnecdoteForm createAnecdote={newAnecdoteMutation.mutate} />
+        <Notification />
+        <AnecdoteForm createAnecdote={newAnecdoteMutation.mutate} />
 
-      {anecdotes.map((anecdote) => (
-        <div key={anecdote.id}>
-          <div>{anecdote.content}</div>
-          <div>
-            has {anecdote.votes}
-            <button onClick={() => handleVote(anecdote)}>vote</button>
+        {anecdotes.map((anecdote) => (
+          <div key={anecdote.id}>
+            <div>{anecdote.content}</div>
+            <div>
+              has {anecdote.votes}
+              <button onClick={() => handleVote(anecdote)}>vote</button>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </NotificationContext.Provider>
   )
 }
 
